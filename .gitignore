@@ -2,3 +2,8 @@ config.yml
 __pycache__
 /engines/*
 !/engines/README.md
+.venv
+.github
+venv
+strategies - copia (2).py
+strategies - copia.py
