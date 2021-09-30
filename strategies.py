@@ -67,6 +67,9 @@ class MinimalEngine(EngineWrapper):
             "name": self.engine_name
         }
 
+        #ERROR SI EMPIEZA DSDE OTRA POS
+        self.arbol = Arbol(chess.Board(chess.STARTING_FEN), 4)
+
     def search_with_ponder(self, board, wtime, btime, winc, binc, ponder, draw_offered):
         timeleft = 0
         if board.turn:
@@ -99,52 +102,68 @@ class MinimalEngine(EngineWrapper):
 
 
 class Minimax(MinimalEngine): 
-    
+
     def search(self, board, timeleft, *otros):
+        
+        #falla si arracna el bot
+        self.arbol.actualizar_raiz(board.peek())
 
-        arbol = Arbol(board, 3)
+        self.arbol.buscar(2)
+        #print("nodos visitados: " + str(arbol.nodos_totales))
+        #print("evaluacion: " + str(arbol.raiz.evaluacion))
+        print("Profundidad: " + str(self.arbol.profundidad))
 
-        print("nodos visitados: " + str(arbol.nodos_totales))
-        print("evaluacion: " + str(arbol.raiz.evaluacion))
-
-        return PlayResult(arbol.raiz.mejor_movida, None)
+        mejor_mov = self.arbol.raiz.mejor_movida
+        self.arbol.actualizar_raiz(mejor_mov)
+        return PlayResult(mejor_mov, None)
+        #return PlayResult(random.choice(list(board.legal_moves)), None)
 
 class Arbol():
 
-    def __init__(self, posicion_inicial, profundidad):
-        self.prof_max = profundidad
-        self.prof_vista = 0
+    def __init__(self, posicion_inicial, prof_inicial):
+        
+        print("genrando arbol")
+        self.profundidad = 0
         self.raiz = Nodo(posicion_inicial)
-        self.nodos_totales = 1
-
-        #self.expandir_recursivo(self.raiz, 0)
-        print("----- genrando arbol -----")
-        self.generar_arbol()
-        print("----- minimax -----")
-        self.minimax(self.raiz)
+        self.expandir_niveles(prof_inicial)
 
     #GENERAR ARBOL EN BASE A NODOS VISITADOS
-    def generar_arbol(self):
-        while self.prof_vista <= self.prof_max:
-            self.expandir_capa(self.raiz)
-            self.prof_vista += 1
+    def expandir_niveles(self, niveles_a_agregar):
+        for i in range(niveles_a_agregar):
+            self.expandir_un_nivel(self.raiz)
+            self.profundidad += 1
 
-    def expandir_capa(self, nodo_actual):
+    def expandir_un_nivel(self, nodo_actual):
         if len(nodo_actual.hijos()) == 0:
             nodo_actual.generar_hijos()
-            self.nodos_totales += len(nodo_actual.hijos())
             return
         for hijo in nodo_actual.hijos():
-            self.expandir_capa(hijo)
+            self.expandir_un_nivel(hijo)
 
-    def expandir_recursivo(self, nodo_actual, prof_actual):
+    def actualizar_raiz(self, ultima_movida):
+        for hijo in self.raiz.hijos():
+            #EL NODO YA LO TENDRIA QUE SABER, ademas rompe encapsulamiento
+            if hijo.board.peek() == ultima_movida:
+                self.raiz = hijo
+                self.profundidad -= 1
+                print("Nueva raiz: " + hijo.board.peek().uci())
+                return
+
+    def buscar(self, profundidad):
+        print("buscando")
+
+        self.expandir_niveles(profundidad)
+
+        self.minimax(self.raiz)
+
+    """def expandir_recursivo(self, nodo_actual, prof_actual):
         if prof_actual > self.prof_max:
             return
 
         nodo_actual.generar_hijos()
         for i in nodo_actual.hijos():
             self.expandir_recursivo(i, prof_actual + 1)
-        self.nodos_totales += len(nodo_actual.hijos())
+        self.nodos_totales += len(nodo_actual.hijos())"""
 
     def minimax(self, nodo_actual): #hacerlo con profundidad
 
