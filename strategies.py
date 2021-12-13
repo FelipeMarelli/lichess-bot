@@ -193,7 +193,7 @@ class Arbol():
                     mejor_movida = hijo.ult_movida
                 if mejor_eval > alpha:
                     alpha = mejor_eval
-                if beta <= alpha: 
+                if beta <= alpha or mejor_eval > 950: 
                     break
         else: #MINIMIZER
             mejor_eval = Infinity
@@ -202,7 +202,7 @@ class Arbol():
                 if evaluacion < mejor_eval:
                     mejor_eval = evaluacion
                     mejor_movida = hijo.ult_movida
-                if beta <= alpha:
+                if beta <= alpha or mejor_eval < -950:
                     break       
         nodo_actual.evaluacion = mejor_eval
         nodo_actual.mejor_movida = mejor_movida
@@ -255,14 +255,21 @@ class Nodo():
 
     def generar_hijos(self):
         movidas = list(self.board.legal_moves)
+        capturas = [] 
+        jaques = []
+        normales = []
         for mov in movidas:
             nuevo_board = self.board.copy()
             nuevo_board.push(mov)
             nuevo_nodo = Nodo(nuevo_board, mov)
             if nuevo_board.is_check():
-                self.nodos_hijos.insert(0, nuevo_nodo)
+                jaques.append(nuevo_nodo)
+            elif self.board.is_capture(mov):
+                #print("is capture" + str(mov))
+                capturas.append(nuevo_nodo)
             else:
-                self.nodos_hijos.append(nuevo_nodo)
+                normales.append(nuevo_nodo)
+        self.nodos_hijos = jaques + capturas + normales
 
     def evaluar(self):
         evaluacion = 0
@@ -276,21 +283,25 @@ class Nodo():
                 evaluacion = 0
         else: 
             #material
-            evaluacion += self.contar_material(self.board.board_fen())
+            #evaluacion += self.contar_material(self.board.board_fen())
 
-            #movidas
+            
             if self.turno_blancas:
+                #movidas
                 movidas_blancas = self.board.legal_moves.count()
                 tablero_turno_cambiado = self.board.copy()
                 tablero_turno_cambiado.push(chess.Move.null())
                 movidas_negras = tablero_turno_cambiado.legal_moves.count()
+                #enroque
+                #if self.board.is_castling()
             else:
+                #movidas
                 movidas_negras = self.board.legal_moves.count()
                 tablero_turno_cambiado = self.board.copy()
                 tablero_turno_cambiado.push(chess.Move.null())
                 movidas_blancas = tablero_turno_cambiado.legal_moves.count()
             #evaluacion += math.tanh((movidas_blancas - movidas_negras) * 0.2)*0.5
-            evaluacion += (((movidas_blancas - movidas_negras)+20)/(40))*0.5
+            #evaluacion += (((movidas_blancas - movidas_negras)+20)/(40))*0.5
                 
             #enroque
             """if self.board.has_castling_rights(chess.WHITE):
